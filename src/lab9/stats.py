@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from numbers import Integral
 
 POS = "FAIL"   # the judge's job is to FIND failures, so FAIL is the positive class
 
@@ -96,16 +97,23 @@ def paired_bootstrap(a: Sequence[float], b: Sequence[float], *, n_resamples: int
     return (delta, float(res.confidence_interval.low), float(res.confidence_interval.high))
 
 
+def _validate_k(n: int, c: int, k: int) -> None:
+    if any(isinstance(x, bool) or not isinstance(x, Integral) for x in (n, c, k)):
+        raise ValueError(f"expected integer arguments, got (n={n!r}, c={c!r}, k={k!r})")
+    if n <= 0 or k <= 0 or k > n or c < 0 or c > n:
+        raise ValueError(f"invalid (n={n}, c={c}, k={k})")
+
+
 def pass_at_k(n: int, c: int, k: int) -> float:
     """Probability that AT LEAST ONE of k trials drawn from n (c of them passing) passes.
     Unbiased estimator (Chen et al. 2021): 1 - C(n-c, k) / C(n, k). Raise ValueError if k > n."""
-    # TODO M6
-    raise NotImplementedError
+    _validate_k(n, c, k)
+    return 1.0 - math.comb(n - c, k) / math.comb(n, k)
 
 
 def pass_hat_k(n: int, c: int, k: int) -> float:
     """pass^k (tau-bench, Yao et al. 2024): probability that ALL k trials drawn from n pass.
     Unbiased estimator: C(c, k) / C(n, k). Raise ValueError if k > n.
     pass^k <= pass@1 <= pass@k; a reliable agent keeps pass^k close to pass@1."""
-    # TODO M6
-    raise NotImplementedError
+    _validate_k(n, c, k)
+    return math.comb(c, k) / math.comb(n, k)
